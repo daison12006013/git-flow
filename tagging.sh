@@ -38,10 +38,13 @@ git fetch
 
 git branch $mainBranch -D
 git branch $devBranch -D
+git branch $1/$2 -D
 
 git fetch
 git checkout $mainBranch
-git checkout $devBranch"
+git checkout $devBranch
+git checkout $1/$2
+"
 
     if [ "$1" = "release" ]; then
     echo "
@@ -51,39 +54,27 @@ git fetch --tags
 
 git flow $1 start $2
 git flow $1 publish $2
-
-git checkout $mainBranch
-git merge --no-ff --no-edit $1/$2
-git tag -a $2 -m "$2"
-git checkout $devBranch
-git merge --no-ff --no-edit $2
-git push origin --tags
-git push origin $devBranch
-git push origin $mainBranch
-git branch -d $1/$2
 "
     fi
 
     if [ "$1" = "hotfix" ]; then
     echo "
-git branch | grep $1\* | xargs git branch -D
 git tag -l | xargs git tag -d
 git fetch --tags
+"
+    fi
 
-git flow $1 finish $2
-git push origin --tags
-
+    echo "
 git checkout $mainBranch
 git merge --no-ff --no-edit $1/$2
 git tag -a $2 -m "$2"
 git checkout $devBranch
 git merge --no-ff --no-edit $2
-git push origin --tags
 git push origin $devBranch
 git push origin $mainBranch
+git push origin --tags
 git branch -d $1/$2
 "
-    fi
 
 }
 
