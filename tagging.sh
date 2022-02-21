@@ -33,21 +33,17 @@ function print() {
         exit 1
     fi
 
+    if [ "$1" = "release" ]; then
     echo "
 git fetch
 
 git branch $mainBranch -D
 git branch $devBranch -D
-git branch $1/$2 -D
 
 git fetch
 git checkout $mainBranch
 git checkout $devBranch
-git checkout $1/$2
-"
 
-    if [ "$1" = "release" ]; then
-    echo "
 git branch | grep $1\* | xargs git branch -D
 git tag -l | xargs git tag -d
 git fetch --tags
@@ -59,6 +55,17 @@ git flow $1 publish $2
 
     if [ "$1" = "hotfix" ]; then
     echo "
+git fetch
+
+git branch $mainBranch -D
+git branch $devBranch -D
+git branch $1/$2 -D
+
+git fetch
+git checkout $mainBranch
+git checkout $devBranch
+git checkout $1/$2
+
 git tag -l | xargs git tag -d
 git fetch --tags
 "
