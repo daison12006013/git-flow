@@ -7,6 +7,9 @@
 # Sources:
 #      https://danielkummer.github.io/git-flow-cheatsheet/index.html
 #      https://gist.github.com/JamesMGreene/cdd0ac49f90c987e45ac
+#
+# Example of this command:
+#   bash ../gittools/tagging.sh release jane v3.146.0
 #=======================================================================
 
 mainBranch="master"
@@ -28,7 +31,7 @@ function print() {
         exit 1
     fi
 
-    if [ -z $2 ]; then
+    if [ -z $3 ]; then
         echo "Provide the second param as the TAG version"
         exit 1
     fi
@@ -37,19 +40,23 @@ function print() {
     echo "
 git fetch
 
+git checkout release/$2
 git branch $mainBranch -D
 git branch $devBranch -D
 
 git fetch
 git checkout $mainBranch
 git checkout $devBranch
+git pull $origin $devBranch --no-edit
+git pull $origin release/$2 --no-edit
+git push $origin $devBranch
 
 git branch | grep $1\* | xargs git branch -D
 git tag -l | xargs git tag -d
 git fetch --tags
 
-git flow $1 start $2
-git flow $1 publish $2
+git flow $1 start $3
+git flow $1 publish $3
 "
     fi
 
@@ -59,12 +66,12 @@ git fetch
 
 git branch $mainBranch -D
 git branch $devBranch -D
-git branch $1/$2 -D
+git branch $1/$3 -D
 
 git fetch
 git checkout $mainBranch
 git checkout $devBranch
-git checkout $1/$2
+git checkout $1/$3
 
 git tag -l | xargs git tag -d
 git fetch --tags
@@ -73,22 +80,22 @@ git fetch --tags
 
     echo "
 git checkout $mainBranch
-git merge --no-ff --no-edit $1/$2
-git tag -a $2 -m "$2"
+git merge --no-ff --no-edit $1/$3
+git tag -a $3 -m "$3"
 git checkout $devBranch
-git merge --no-ff --no-edit $2
+git merge --no-ff --no-edit $3
 git push origin $devBranch
 git push origin $mainBranch
 git push origin --tags
-git branch -d $1/$2
+git branch -d $1/$3
 "
 
     if [ "$1" = "release" ]; then
     echo "
-git push origin -d $1/$2
+git push origin -d $1/$3
 "
     fi
 }
 
 dirty
-print "$1" "$2"
+print "$1" "$2" "$3"
