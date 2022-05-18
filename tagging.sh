@@ -14,6 +14,7 @@
 
 mainBranch="master"
 devBranch="develop"
+origin="origin"
 
 function dirty() {
     if [ $(git diff --name-only) ]; then
