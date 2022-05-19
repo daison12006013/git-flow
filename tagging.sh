@@ -10,6 +10,7 @@
 #
 # Example of this command:
 #   bash ../gittools/tagging.sh release jane v3.146.0
+#   bash ../gittools/tagging.sh hotfix "" v3.146.1
 #=======================================================================
 
 mainBranch="master"
@@ -40,7 +41,6 @@ function print() {
     if [ "$1" = "release" ]; then
     echo "
 git fetch
-
 git checkout release/$2
 git branch $mainBranch -D
 git branch $devBranch -D
@@ -49,7 +49,7 @@ git fetch
 git checkout $mainBranch
 git checkout $devBranch
 git pull $origin $devBranch --no-edit
-git pull $origin release/$2 --no-edit
+git pull $origin $1/$2 --no-edit
 git push $origin $devBranch
 
 git branch | grep $1\* | xargs git branch -D
@@ -63,8 +63,18 @@ git flow $1 publish $3
 
     if [ "$1" = "hotfix" ]; then
     echo "
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Make sure you've created a branch hotfix/$3
+git checkout develop
+git branch master -D
 git fetch
+git checkout master
+git branch hotfix/$3
+git checkout hotfix/$3
+git push origin hotfix/$3
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+git fetch
 git branch $mainBranch -D
 git branch $devBranch -D
 git branch $1/$3 -D
