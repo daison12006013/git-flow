@@ -91,10 +91,10 @@ git fetch --tags
 
     echo "
 git checkout $mainBranch
-git merge --no-ff --no-edit $1/$3
+git merge --no-ff --no-edit --no-verify $1/$3
 git tag -a $3 -m "$3"
 git checkout $devBranch
-git merge --no-ff --no-edit $3
+git merge --no-ff --no-edit --no-verify $3
 git push origin $devBranch
 git push origin $mainBranch
 git push origin --tags
