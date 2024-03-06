@@ -206,7 +206,7 @@ fi
 # check if GIT_URL is bitbucket.org
 if [[ $GIT_URL == *"bitbucket.org"* ]]; then
     echo "
-    Diff can be seen here: ${GIT_URL}/branches/compare/${TAG_VERSION}...${MAIN_BRANCH}#diff
+    Diff can be seen here: ${GIT_URL}/branches/compare/${TAG_VERSION}%0D${MAIN_BRANCH}#diff
 "
 elif [[ $GIT_URL == *"github.com"* ]]; then
     echo "
