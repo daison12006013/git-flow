@@ -87,79 +87,105 @@ function print() {
         exit 1
     fi
 
-    local FINAL_SCRIPT=""
+    local SCRIPT_CLEANUP_LOCAL_BRANCHES=""
+    local SCRIPT_UPDATE_DEV_BR=""
+    local SCRIPT_CLEANUP_LOCAL_TAGS=""
+    local SCRIPT_CHECKOUT_TYPE_BRANCH=""
+    local SCRIPT_CREATE_TAG=""
+    local SCRIPT_CLEANUP_TYPE_BRANCH=""
 
     if [ "$1" = "release" ]; then
-    FINAL_SCRIPT+="
-echo \"Cleaning up local branches...\" && \\
-git fetch && \\
-git checkout $1/$2 && \\
-git branch $MAIN_BRANCH -D && \\
-git branch $DEVELOP_BRANCH -D && \\
-echo \"Cleaning up local branches... done\"
+        SCRIPT_CLEANUP_LOCAL_BRANCHES="
+            echo \"Cleaning up local branches\" && \\
+            git fetch && \\
+            git checkout $1/$2 && \\
+            git branch $MAIN_BRANCH -D && \\
+            git branch $DEVELOP_BRANCH -D && \\
+            echo \"Cleaning up local branches... done\"
+        "
 
-echo \"Updating [$DEVELOP_BRANCH] branch and push to [$ORIGIN]...\" && \\
-git fetch && \\
-git checkout $MAIN_BRANCH && \\
-git checkout $DEVELOP_BRANCH && \\
-git pull $ORIGIN $DEVELOP_BRANCH --no-edit && \\
-git pull $ORIGIN $1/$2 --no-edit && \\
-git push $ORIGIN $DEVELOP_BRANCH && \\
-echo \"Updating [$DEVELOP_BRANCH] branch and push to [$ORIGIN]... done\"
+        SCRIPT_UPDATE_DEV_BR="
+            echo \"Updating [$DEVELOP_BRANCH] branch and push to [$ORIGIN]\" && \\
+            git fetch && \\
+            git checkout $MAIN_BRANCH && \\
+            git checkout $DEVELOP_BRANCH && \\
+            git pull $ORIGIN $DEVELOP_BRANCH --no-edit && \\
+            git pull $ORIGIN $1/$2 --no-edit && \\
+            git push $ORIGIN $DEVELOP_BRANCH && \\
+            echo \"Updating [$DEVELOP_BRANCH] branch and push to [$ORIGIN]... done\"
+        "
 
-echo \"Cleaning up local tags\" && \\
-git branch | grep $1\* | xargs git branch -D && \\
-git tag -l | xargs git tag -d && \\
-git fetch --tags && \\
-echo \"Cleaning up local tags... done\"
-
-"
+        SCRIPT_CLEANUP_LOCAL_TAGS="
+            echo \"Cleaning up local tags\" && \\
+            git branch | grep $1\* | xargs git branch -D && \\
+            git tag -l | xargs git tag -d && \\
+            git fetch --tags && \\
+            echo \"Cleaning up local tags... done\"
+        "
     fi
 
     if [ "$1" = "hotfix" ]; then
-    FINAL_SCRIPT+="
-echo \"Cleaning up local branches...\" && \\
-git fetch && \\
-git checkout $1/$3 && \\
-git branch $MAIN_BRANCH -D && \\
-git branch $DEVELOP_BRANCH -D && \\
-git branch $1/$3 -D && \\
-echo \"Cleaning up local branches... done\"
+        SCRIPT_CLEANUP_LOCAL_BRANCHES="
+            echo \"Cleaning up local branches\" && \\
+            git fetch && \\
+            git checkout $1/$3 && \\
+            git branch $MAIN_BRANCH -D && \\
+            git branch $DEVELOP_BRANCH -D && \\
+            git branch $1/$3 -D && \\
+            echo \"Cleaning up local branches... done\"
+        "
 
-git fetch && \\
-git checkout $MAIN_BRANCH && \\
-git checkout $DEVELOP_BRANCH && \\
-git checkout $1/$3 && \\
+        SCRIPT_CHECKOUT_TYPE_BRANCH="
+            echo \"Cleaning up local branches\"
+            git fetch && \\
+            git checkout $MAIN_BRANCH && \\
+            git checkout $DEVELOP_BRANCH && \\
+            git checkout $1/$3 && \\
+            echo \"Cleaning up local branches... done\"
+        "
 
-echo \"Cleaning up local tags\" && \\
-git branch | grep $1\* | xargs git branch -D && \\
-git tag -l | xargs git tag -d && \\
-git fetch --tags && \\
-echo \"Cleaning up local tags... done\"
-
-"
+        SCRIPT_CLEANUP_LOCAL_TAGS="
+            echo \"Cleaning up local tags\" && \\
+            git branch | grep $1\* | xargs git branch -D && \\
+            git tag -l | xargs git tag -d && \\
+            git fetch --tags && \\
+            echo \"Cleaning up local tags... done\"
+        "
     fi
 
-    FINAL_SCRIPT+="echo \"Creating tag\" && \\
-git checkout $MAIN_BRANCH && \\
-git merge --no-ff --no-edit --no-verify $1/$3 && \\
-git tag -a $3 -m "$3" && \\
-git checkout $DEVELOP_BRANCH && \\
-git merge --no-ff --no-edit --no-verify $3 && \\
-git push $ORIGIN $DEVELOP_BRANCH && \\
-git push $ORIGIN $MAIN_BRANCH && \\
-git push $ORIGIN --tags && \\
-echo \"Creating tag... done\"
-
-"
+    SCRIPT_CREATE_TAG="
+        echo \"Creating tag\" && \\
+        git checkout $MAIN_BRANCH && \\
+        git merge --no-ff --no-edit --no-verify $1/$3 && \\
+        git tag -a $3 -m "$3" && \\
+        git checkout $DEVELOP_BRANCH && \\
+        git merge --no-ff --no-edit --no-verify $3 && \\
+        git push $ORIGIN $DEVELOP_BRANCH && \\
+        git push $ORIGIN $MAIN_BRANCH && \\
+        git push $ORIGIN --tags && \\
+        echo \"Creating tag... done\"
+    "
 
     if [ "$1" = "release" ]; then
-        FINAL_SCRIPT+="git branch -d $1/$3 && \\
-git push $ORIGIN -d $1/$3
-"
+        SCRIPT_CLEANUP_TYPE_BRANCH="
+            echo \"Cleaning up [$1/$3] branch\" && \\
+            git branch -d $1/$3 && \\
+            git push $ORIGIN -d $1/$3
+            echo \"Cleaning up [$1/$3] branch... done\"
+        "
     fi
 
-    echo "$FINAL_SCRIPT"
+    # below prints the generated console command
+    # 1st sed: it trims all white spaces in the beginning of each line
+    # 2nd sed: it removes double new lines
+    echo "
+        ${SCRIPT_CLEANUP_LOCAL_BRANCHES}
+        ${SCRIPT_UPDATE_DEV_BR}
+        ${SCRIPT_CHECKOUT_TYPE_BRANCH}
+        ${SCRIPT_CLEANUP_LOCAL_TAGS}
+        ${SCRIPT_CREATE_TAG}
+        ${SCRIPT_CLEANUP_TYPE_BRANCH}
+    " | sed 's/^[ \t]*//' | sed '/^$/N;/^\n$/D';
 }
 
 dirty
@@ -172,5 +198,4 @@ else
     echo "Generated console command:"
     echo "$result
 "
-
 fi
