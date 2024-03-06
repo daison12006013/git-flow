@@ -7,11 +7,11 @@ This tool will help you to manage how to tag your project.
 This command will print-out the lists of git commands you needed to release or hotfix.
 
 ```bash
-$> ./tagging.sh release v1.0.0
+$> ./tagging.sh --tag-type=release --tag-version=v3.146.0 --tag-name=poring
 ```
 
 ```bash
-$> ./tagging.sh hotfix "" v1.0.1
+$> ./tagging.sh --tag-type=hotfix --tag-version=v3.146.1
 ```
 
 ## Syncing Branches
