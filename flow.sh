@@ -9,8 +9,8 @@
 #      https://gist.github.com/JamesMGreene/cdd0ac49f90c987e45ac
 #
 # Example of this command:
-#   bash ../gittools/tagging.sh --git-url=https://bitbucket.org/meta/react --tag-type=release --tag-version=v3.146.0 --tag-name=jane
-#   bash ../gittools/tagging.sh --git-url=https://bitbucket.org/meta/react --tag-type=hotfix  --tag-version=v3.146.0
+#   bash ../gittools/flow.sh --git-url=https://bitbucket.org/meta/react --tag-type=release --tag-version=v3.146.0 --tag-name=jane
+#   bash ../gittools/flow.sh --git-url=https://bitbucket.org/meta/react --tag-type=hotfix  --tag-version=v3.146.0
 #========================================================================================================================================
 
 usage="$(basename "$0") [-h] [-e] [-f] [--help] [--origin <origin>] [--main-branch <branch>] [--develop-branch <branch>] [--tag-type <type>] [--tag-name <name>] [--tag-version <version>] [--git-url <url>] -- script to help generate the console command to deploy release or hotfix
@@ -79,12 +79,6 @@ function print() {
         exit 1
     fi
 
-    # Check if the tag type is release and the tag name is empty
-    if [ "$1" == "release" ] && [ "$2" == "" ]; then
-        echo "Provide a valid --tag-name= (e.g. jane)"
-        exit 1
-    fi
-
     if [ -z $3 ]; then
         echo "Provide the --tag-version= (e.g. v3.146.0)"
         exit 1
@@ -93,71 +87,39 @@ function print() {
     local SCRIPT_CLEANUP_LOCAL_BRANCHES=""
     local SCRIPT_UPDATE_DEV_BR=""
     local SCRIPT_CLEANUP_LOCAL_TAGS=""
-    local SCRIPT_CHECKOUT_TYPE_BRANCH=""
     local SCRIPT_CREATE_TAG=""
     local SCRIPT_CLEANUP_TYPE_BRANCH=""
 
-    if [ "$1" = "release" ]; then
-        SCRIPT_CLEANUP_LOCAL_BRANCHES="
-            echo \"[git-flow] Cleaning up local branches\"
-            git fetch
-            git checkout $1/$2
-            git branch $MAIN_BRANCH -D
-            git branch $DEVELOP_BRANCH -D
-            echo \"[git-flow] Cleaning up local branches... done\"
-        "
+    SCRIPT_CLEANUP_LOCAL_BRANCHES="
+        echo \"[flow.sh] Cleaning up local branches\"
+        git fetch
+        git checkout $1/$2
+        git branch $MAIN_BRANCH -D
+        git branch $DEVELOP_BRANCH -D
+        echo \"[flow.sh] Cleaning up local branches... done\"
+    "
 
-        SCRIPT_UPDATE_DEV_BR="
-            echo \"[git-flow] Updating [$DEVELOP_BRANCH] branch and push to [$ORIGIN]\"
-            git fetch
-            git checkout $MAIN_BRANCH
-            git checkout $DEVELOP_BRANCH
-            git pull $ORIGIN $DEVELOP_BRANCH --no-edit
-            git pull $ORIGIN $1/$2 --no-edit
-            git push $ORIGIN $DEVELOP_BRANCH
-            echo \"[git-flow] Updating [$DEVELOP_BRANCH] branch and push to [$ORIGIN]... done\"
-        "
+    SCRIPT_UPDATE_DEV_BR="
+        echo \"[flow.sh] Updating [$DEVELOP_BRANCH] branch and push to [$ORIGIN]\"
+        git fetch
+        git checkout $MAIN_BRANCH
+        git checkout $DEVELOP_BRANCH
+        git pull $ORIGIN $DEVELOP_BRANCH --no-edit
+        git pull $ORIGIN $1/$2 --no-edit
+        git push $ORIGIN $DEVELOP_BRANCH
+        echo \"[flow.sh] Updating [$DEVELOP_BRANCH] branch and push to [$ORIGIN]... done\"
+    "
 
-        SCRIPT_CLEANUP_LOCAL_TAGS="
-            echo \"[git-flow] Cleaning up local tags\"
-            git branch | grep $1\* | xargs git branch -D
-            git tag -l | xargs git tag -d
-            git fetch --tags
-            echo \"[git-flow] Cleaning up local tags... done\"
-        "
-    fi
-
-    if [ "$1" = "hotfix" ]; then
-        SCRIPT_CLEANUP_LOCAL_BRANCHES="
-            echo \"[git-flow] Cleaning up local branches\"
-            git fetch
-            git checkout $1/$3
-            git branch $MAIN_BRANCH -D
-            git branch $DEVELOP_BRANCH -D
-            git branch $1/$3 -D
-            echo \"[git-flow] Cleaning up local branches... done\"
-        "
-
-        SCRIPT_CHECKOUT_TYPE_BRANCH="
-            echo \"[git-flow] Cleaning up local branches\"
-            git fetch
-            git checkout $MAIN_BRANCH
-            git checkout $DEVELOP_BRANCH
-            git checkout $1/$3
-            echo \"[git-flow] Cleaning up local branches... done\"
-        "
-
-        SCRIPT_CLEANUP_LOCAL_TAGS="
-            echo \"[git-flow] Cleaning up local tags\"
-            git branch | grep $1\* | xargs git branch -D
-            git tag -l | xargs git tag -d
-            git fetch --tags
-            echo \"[git-flow] Cleaning up local tags... done\"
-        "
-    fi
+    SCRIPT_CLEANUP_LOCAL_TAGS="
+        echo \"[flow.sh] Cleaning up local tags\"
+        git branch | grep $1\* | xargs git branch -D
+        git tag -l | xargs git tag -d
+        git fetch --tags
+        echo \"[flow.sh] Cleaning up local tags... done\"
+    "
 
     SCRIPT_CREATE_TAG="
-        echo \"[git-flow] Creating tag\"
+        echo \"[flow.sh] Creating tag\"
         git checkout $MAIN_BRANCH
         git merge --no-ff --no-edit --no-verify $1/$3
         git tag -a $3 -m "$3"
@@ -166,15 +128,18 @@ function print() {
         git push $ORIGIN $DEVELOP_BRANCH
         git push $ORIGIN $MAIN_BRANCH
         git push $ORIGIN --tags
-        echo \"[git-flow] Creating tag... done\"
+        echo \"[flow.sh] Creating tag... done\"
     "
 
-    if [ "$1" = "release" ]; then
+    # if the --tag-name is present, that means that the repository
+    # follows a sprint naming convention, so we need to cleanup the
+    # temporary branch after creating the tag
+    if [ "$2" != "$3" ]; then
         SCRIPT_CLEANUP_TYPE_BRANCH="
-            echo \"[git-flow] Cleaning up [$1/$3] branch\"
+            echo \"[flow.sh] Cleaning up [$1/$3] branch\"
             git branch -d $1/$3
             git push $ORIGIN -d $1/$3
-            echo \"[git-flow] Cleaning up [$1/$3] branch... done\"
+            echo \"[flow.sh] Cleaning up [$1/$3] branch... done\"
         "
     fi
 
@@ -184,7 +149,6 @@ function print() {
     echo "
         ${SCRIPT_CLEANUP_LOCAL_BRANCHES}
         ${SCRIPT_UPDATE_DEV_BR}
-        ${SCRIPT_CHECKOUT_TYPE_BRANCH}
         ${SCRIPT_CLEANUP_LOCAL_TAGS}
         ${SCRIPT_CREATE_TAG}
         ${SCRIPT_CLEANUP_TYPE_BRANCH}
@@ -192,7 +156,7 @@ function print() {
 }
 
 dirty
-result=$(print "$TAG_TYPE" "$TAG_NAME" "$TAG_VERSION")
+result=$(print "$TAG_TYPE" "${TAG_NAME:-$TAG_VERSION}" "$TAG_VERSION")
 
 if [ $EXECUTE -eq 1 ]; then
     echo "Executing the generated console command..."
@@ -217,5 +181,3 @@ elif [[ $GIT_URL == *"gitlab.com"* ]]; then
     Diff can be seen here: ${GIT_URL}/-/compare/${MAIN_BRANCH}...${TAG_VERSION}
 "
 fi
-
-
